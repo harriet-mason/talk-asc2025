@@ -1,0 +1,23 @@
+---
+title: "Visualising Uncertainty for Holistic Insights"
+format: revealjs
+editor: visual
+---
+
+# Walktober intro
+
+# What is uncertainty visualisation
+
+# Signal Supression
+
+# Visual interference
+
+# Random variables as units
+
+# Uncertainty visualisation as random variables
+
+# Back to walktober example
+
+# Please give me a job
+
+
