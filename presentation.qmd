@@ -5,16 +5,31 @@ editor: visual
 ---
 
 # Walktober intro
+- Get to version of distribution input that is good
+  - What the hell do I do with this
+  - Could plot estimates over time, but then what was the point in doing all that pedometer research?
+- How do we want to integrate this information?
+- Lets put a pin in this and come back to it.
+
+
 
 # What is uncertainty visualisation
 
-# Signal Supression
+- We all like to act like our goals don't matter, but they do. We want nice statistical properties
+  - Nice statistical properties are what separate us from the animals
 
-# Visual interference
 
-# Random variables as units
+# Criteria 1: Signal Supression
+- Statistical validity translates to perceptual ease
+- Like a 
+
+# Visual interference for visual inference
+
 
 # Uncertainty visualisation as random variables
+
+# Exploration
+- Often people visualise distributions or probabilities and they say that is uncertainty visualisation, but I don't want to be limited to a specific statistic or plot type or data type. 
 
 # Back to walktober example
 
