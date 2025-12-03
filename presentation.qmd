@@ -2,37 +2,186 @@
 title: "Visualising Uncertainty for Holistic Insights"
 format: revealjs
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
+```{r}
+#| eval: false
+library(ggdibbler)
+library(tidyverse)
+library(colorspace)
+library(sf)
+library(ggthemes)
+# read in other data
+#filtered_walk <- walkathon[which((walkathon$name %in% extra_walk$name)),]
+filtered_walk <- walkathon
+
+# Read in extra walk and add in suburbs
+extra_walk <- read.csv("extrawalktober.csv") |>
+  mutate(suburb = ifelse(suburb == "Claython north", "Clayton", suburb),
+         suburb = ifelse(suburb == "Clayton ", "Clayton", suburb),
+         suburb = ifelse(suburb == "Mordi ", "Oakleigh", suburb),
+         suburb = ifelse(suburb == "Oakleigh ", "Oakleigh", suburb),
+         suburb = ifelse(suburb == "Langwarrin", "Mordialloc", suburb),
+         suburb = ifelse(suburb == "Croydon", "Mordialloc", suburb))
+
+suburbs <- strayr::read_absmap("suburb2021")
+#required_subs <- unique(c(extra_walk$suburb))
+my_suburbs <- suburbs |> 
+  filter(state_name_2021 == "Victoria") |>
+  mutate(suburb_name_2021 = str_remove(suburb_name_2021, " \\(Vic.\\)")) |>
+  filter(between(cent_long, 144.8, 145.2),
+         between(cent_lat, -38, -37.8)) |>
+  #filter(suburb_name_2021 %in% required_subs) |>
+  #select(c(suburb_name_2021, geometry)) |>
+  rename("suburb" = "suburb_name_2021")
+
+extra_walk <- extra_walk |>
+  left_join(my_suburbs, by = "suburb")
+# add team colours
+extra_walk$team_colour <- c(sequential_hcl(4, palette = "Peach"),
+  sequential_hcl(5, palette = "Blues")[1:4],
+  sequential_hcl(6, palette = "Reds 3")[2:5],
+  sequential_hcl(5, palette = "Greens")[1:4],
+  sequential_hcl(4, palette = "Purp"),
+  sequential_hcl(8, palette = "Heat")[3:6])
+
+# clean data to just local suburbs
+clean_walk <- filtered_walk |>
+  left_join(extra_walk, by="name") |>
+  mutate(steps_dist = dist_truncated(steps + 0.1*steps*dist_normal(bias_mu, bias_se), 0),
+         date = as.Date(date, "%d/%m/%y")) |>
+  group_by(name) |>
+  mutate(cum_steps = cumsum(steps)) |>
+  ungroup() |>
+  filter(date <= as.Date("23/10/25", "%d/%m/%y")) |>
+  na.omit()
+
+suburb_walk <- clean_walk |>
+  as.tibble() |>
+  group_by(suburb) |>
+  summarise(mean_steps = mean(steps + 0.1*bias_mu),
+            se_steps = mean((steps*0.1)^2*bias_se),
+            steps_dist = dist_normal(mean_steps, se_steps)) |> 
+  left_join(my_suburbs, by = "suburb") |>
+  select(c(suburb, steps_dist, mean_steps, geometry))
+
+# Plot0A
+ggplot(my_suburbs) +
+  geom_sf(data = suburb_walk, aes(geometry= geometry, fill = mean_steps)) +
+  geom_sf(aes(geometry= geometry), fill=NA) +
+  theme_map() +
+  scale_fill_continuous_sequential(palette = "Magenta", rev = TRUE)
+
+# Plot0B
+ggplot(my_suburbs) +
+  geom_sf_sample(data = suburb_walk, linewidth=0, times=100,
+                 aes(geometry= geometry, fill = steps_dist)) +
+  geom_sf(aes(geometry= geometry), fill=NA) +
+  theme_map()  +
+  scale_fill_continuous_sequential(palette = "Magenta", rev = TRUE)
+
+
+ggplot(clean_walk, aes(x=date, y=cum_steps, 
+                       colour = team_colour, group=name)) +
+  geom_line() +
+  scale_colour_identity()
+# plot 1: line plot
+ggplot(clean_walk, aes(x=date, y=cum_steps, 
+                       colour = team_colour, group=name)) +
+  geom_line() +
+  scale_colour_identity()
+
+# plot 2: distribution
+ggplot(clean_walk, aes(x=steps, fill = team_colour,
+                       group=name)) +
+  geom_density(alpha=0.5) +
+  facet_wrap(~team) +
+  scale_fill_identity()
+
+ggplot(clean_walk, aes(x=steps, fill = team_colour,
+                       group=name)) +
+  geom_density(alpha=0.5) +
+  facet_wrap(~team) +
+  scale_fill_identity()
+
+# plot 3A
+ggplot(clean_walk, aes(x=team, y = steps, fill = team_colour)) +
+  geom_col() +
+  scale_fill_identity()+
+  theme_few()
+# plot 3B
+ggplot(clean_walk, aes(x=team, y = steps_dist, fill = team_colour)) +
+  geom_col_sample(times=50) +
+  scale_fill_identity() +
+  theme_few()
+
+ggplot(clean_walk, aes(x=height, y = steps, colour = team_colour)) +
+  geom_jitter() +
+  scale_fill_identity()
+
+```
 
 # Walktober intro
+- The NUMBATs research group had an opt in walktober where we all competed to see how many steps we could walk each day
+- Since this is a stats I figured we would be data quality angels, so before the competition started, I searched up the most accurate pedometer
+- It turns out, pedometers are wildly inaccurate
+- Quantifiable vs unquantifiable uncertainty
 - Get to version of distribution input that is good
   - What the hell do I do with this
   - Could plot estimates over time, but then what was the point in doing all that pedometer research?
 - How do we want to integrate this information?
-- Lets put a pin in this and come back to it.
+- Can make a set of visualisations just using the main data
+  - Line plot
+  - Choropleth map
+- Mum text
 
 
+# Approach: Visualise the probability or variance
+- That's not what I asked for, is it
+- If i go to the vet and ask them to cure my sick dog, and they come back with a healthy horse, did the vet do their job?
+- This plot clearly is doing something different to what I asked
+- I don't want to know about the variance or probability in of itself, I only care about the variance insofar as it effects my take away from the other graphics
+
+
+# Approach: visualise the probabilities
 
 # What is uncertainty visualisation
-
+- Me text about getting scammed
 - We all like to act like our goals don't matter, but they do. We want nice statistical properties
   - Nice statistical properties are what separate us from the animals
 
 
+# Criteria  for uncertinty visualisation
 # Criteria 1: Signal Supression
 - Statistical validity translates to perceptual ease
-- Like a 
 
-# Visual interference for visual inference
+# Solution 1: Visual interference for visual inference
 
 
-# Uncertainty visualisation as random variables
 
-# Exploration
-- Often people visualise distributions or probabilities and they say that is uncertainty visualisation, but I don't want to be limited to a specific statistic or plot type or data type. 
+# Criteria 2: Useful for EDA
+- Visualisations can be made without any explicit mapping or
+- We don't want to be limited to a specific statistic or plot type or data type. I don't want to only be able to incorporate uncertainty in maps
+- Don't want top down solution
+- Also doesn't translate
+- Every plot doesn't have a second axis that works like this - e.g. 
+
+# Solution 2: Emergent aesthetics
+
+# Crieteria 3: Nice statistical properties
+- 
+
+# Solution 3: Nested positions
+
 
 # Back to walktober example
 
+
 # Please give me a job
 
-
+# Acknowledgements
+- AEMO
+- RTP paid for uni
+- Numbat Hackathon
+- The Walktober data survey was partially collected during the 2025 NUMBAT Hackathon. We thank [Monash NUMBATs](https://numbat.space/) and [Monash EBS](https://www.monash.edu/business/ebs) for organising the event and providing resources that enabled collaborative development
